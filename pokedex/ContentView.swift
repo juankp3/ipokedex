@@ -8,9 +8,37 @@
 import SwiftUI
 import AVFoundation
 
+// Clase auxiliar para manejar la reproducción de audio
+class AudioPlayerHelper: NSObject, AVAudioPlayerDelegate {
+    var onFinishPlaying: (() -> Void)?
+    private var audioPlayer: AVAudioPlayer?
+
+    func playSound(resourceName: String, onFinish: @escaping () -> Void) {
+        onFinishPlaying = onFinish
+        if let soundURL = Bundle.main.url(forResource: resourceName, withExtension: "mp3", subdirectory: "audio") {
+            do {
+                audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+                audioPlayer?.delegate = self
+                audioPlayer?.play()
+            } catch {
+                print("Error al reproducir el audio: \(error.localizedDescription)")
+                onFinishPlaying?()
+            }
+        } else {
+            print("No se encontró el archivo de audio")
+            onFinishPlaying?()
+        }
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        onFinishPlaying?()
+    }
+}
+
 struct PokedexView: View {
-    @State private var pokemonName: String = "Juan Kuga. Es un genio y le gusta programar" // Variable de estado para el nombre del Pokémon ingresado
-    private let speechSynthesizer = AVSpeechSynthesizer() // Sintetizador de voz
+    @State private var pokemonName: String = "Juan. es un desarrollador que esta aprendiendo a programar en SwiftUI con la ayuda del Chat GPT"
+    private let speechSynthesizer = AVSpeechSynthesizer()
+    private let audioPlayerHelper = AudioPlayerHelper() // Instancia de la clase auxiliar
     
     var body: some View {
         VStack {
@@ -23,8 +51,12 @@ struct PokedexView: View {
                 .padding()
             
             Button(action: {
-                // Acción del botón para leer el texto ingresado
-                speakText(pokemonName)
+            
+                
+                // Reproduce el sonido y luego lee el texto
+                audioPlayerHelper.playSound(resourceName: "soydexter") {
+                    speakText(pokemonName)
+                }
             }) {
                 Text("Buscar")
                     .font(.headline)
@@ -41,13 +73,13 @@ struct PokedexView: View {
         .padding()
     }
     
-    // Función para leer el texto en voz alta con una voz robótica
+    // Función para leer el texto en voz alta con una voz natural
     func speakText(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "es-PE") // Puedes probar también "en-GB" o "en-AU" para variar
-        utterance.rate = 0.5 // Velocidad más lenta para una entonación robótica
-        utterance.pitchMultiplier = 1.0 // Reduce el tono para una voz más profunda y mecánica
-        utterance.volume = 1.0 // Ajusta el volumen a un nivel más bajo, si es necesario
+        utterance.voice = AVSpeechSynthesisVoice(language: "es-MX")
+        utterance.rate = 0.5
+        utterance.pitchMultiplier = 1.0
+        utterance.volume = 1.0
         
         speechSynthesizer.speak(utterance)
     }
